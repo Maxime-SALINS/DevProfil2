@@ -180,6 +180,62 @@ fun BoutonAction(
     }
 }
 
+// Données Local
+data class ProjetUi(
+    val id: Int,
+    val titre: String,
+    val description: String,
+    val technologies: List<String>
+)
+
+data class ProfilUi(
+    val nom: String,
+    val role: String,
+    val description: String,
+    val competences: List<String>,
+    val projets: List<ProjetUi>,
+    val email: String,
+    val localisation: String,
+    val disponibilite: String,
+    val disponible: Boolean,
+    val texteBouton: String
+)
+
+fun sampleProfil(): ProfilUi {
+    return ProfilUi(
+        nom = "Maxime Salins",
+        role = "Étudiant développeur",
+        description = "Étudiant en informatique, à l'aise en PHP, " +
+                "qui découvre le développement Android avec Jetpack Compose.",
+        competences = listOf("PHP", "Kotlin", "Jetpack Compose", "Python", "Git", "Docker"),
+        projets = listOf(
+            ProjetUi(
+                id = 1,
+                titre = "DevProfil",
+                description = "Première fiche de profil développeur avec composables réutilisables.",
+                technologies = listOf("Kotlin", "Jetpack Compose")
+            ),
+            ProjetUi(
+                id = 2,
+                titre = "Boutique de chocolat",
+                description = "Site de boutique en PHP natif, conteneurisé avec Docker.",
+                technologies = listOf("PHP", "Docker", "GitLab")
+            ),
+            ProjetUi(
+                id = 3,
+                titre = "ORM pédagogique",
+                description = "Petit ORM écrit en PHP pour comprendre le mapping objet-relationnel.",
+                technologies = listOf("PHP", "SQL")
+            )
+        ),
+        email = "maxime.salins@gmail.com",
+        localisation = "France",
+        disponibilite = "Disponible pour un stage",
+        disponible = true,
+        texteBouton = "Contacter"
+    )
+}
+
 // Previews : deux profils différents
 @Preview(showBackground = true, name = "Android junior - disponible")
 @Composable
