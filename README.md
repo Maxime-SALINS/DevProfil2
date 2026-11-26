@@ -1,84 +1,72 @@
-# Profil développeur Compose
+# DevProfil2 – Profil développeur (Jetpack Compose)
 
 ## Description
 
-Cette application Android affiche une fiche « Profil développeur » réalisée avec Jetpack Compose.
-La fiche présente un nom, un rôle, une courte description, une liste de compétences,
-une information de disponibilité (zone cliquable), un contact et un bouton d'action.
-L'écran est découpé en plusieurs composables réutilisables qui reçoivent leurs données en paramètres.
-Deux previews montrent deux profils différents : un développeur Android junior disponible
-et une développeuse full-stack non disponible.
+Application Android qui présente le profil d'un développeur sur un seul écran : avatar avec
+badge de disponibilité, courte description, compétences, projets, zone de contact et bouton
+d'action « Contacter ». Toutes les données sont locales (écrites en dur dans le code Kotlin,
+dans `sampleProfil()`). Cette version améliore le premier devoir `DevProfil` (dépôt séparé).
 
-## Notions utilisées
+## Composants Compose utilisés
 
-- Composables (`@Composable`)
-- Paramètres
-- `Modifier` et chaînage de modifiers
-- Padding externe / padding interne
-- Callbacks (`onClick`)
-- Previews (`@Preview`)
-- Accessibilité de base (`semantics`, `Role.Button`, `contentDescription`)
+- `Text` : nom, rôle, titres de section, descriptions
+- `Button` : action principale « Contacter » (callback `onContactClick` vide, aucune logique)
+- `Icon` : badge de disponibilité, icône du champ e-mail, icônes de localisation, de
+  disponibilité et des technologies des projets
+- `Image` : avatar placeholder (`ic_menu_gallery`), recadré en cercle avec `clip(CircleShape)`
+- `Card` : description, cartes de projet (`ProjectCard`), zone de contact
+- `OutlinedTextField` en lecture seule (`readOnly = true`) : e-mail
+- `Surface` : en-tête du profil, badge de l'avatar, `TechnologyChip`
+- `Scaffold` et `MaterialTheme`
 
-## Explication courte
+## Layouts utilisés
 
-### 1. Quels composables avez-vous créés ?
+- `Column` : structure verticale de l'écran (organisé pour tenir dans l'écran, sans scroll global)
+  et des cartes
+- `Row` : en-tête (avatar + nom), ligne des technologies d'un projet, ligne localisation / disponibilité
+- `Box` : avatar avec badge de disponibilité superposé (`Alignment.BottomEnd`)
+- `Spacer` : espaces entre les éléments
+- `Surface` : zone visuelle cohérente avec le thème (en-tête du profil)
+- `LazyColumn` et `LazyRow` : voir ci-dessous
 
-- `EcranProfil` : l'écran principal, il fournit les données du profil et place la fiche dans l'écran.
-- `FicheProfil` : la fiche complète, elle assemble tous les éléments dans une `Surface` et une `Column`.
-- `EnteteProfil` : affiche le nom et le rôle.
-- `CompetenceItem` : affiche une seule compétence (appelé une fois par compétence de la liste).
-- `InfoSecondaire` : affiche une petite information, ici le contact.
-- `ZoneDisponibilite` : zone cliquable personnalisée qui affiche la disponibilité.
-- `BoutonAction` : bouton réutilisable dont le texte est un paramètre.
+## Listes
 
-### 2. Quel composable représente l'écran principal ?
+- **`LazyColumn` (projets)** : les 4 projets sont affichés avec `items(...)` et une `key`
+  (l'id du projet). Chaque élément utilise le composable réutilisable `ProjectCard`. La liste
+  prend la place restante de l'écran grâce à `Modifier.weight(1f)` : le reste de la page reste
+  fixe et rien ne déborde. Si la place manque sur un petit écran, seule cette liste défile.
+- **`LazyRow` (compétences)** : les compétences défilent horizontalement, chaque élément est
+  un composable réutilisable `TechnologyChip`.
 
-`EcranProfil` est l'écran principal : c'est lui qui est appelé dans `setContent`, à l'intérieur du `Scaffold`
-de `MainActivity`.
+## Choix de thème
 
-### 3. Où utilisez-vous un padding externe ?
+- **`MaterialTheme.colorScheme`** : palette indigo (couleur principale) et vert d'eau (couleur
+  secondaire). Une version claire (`LightColors`) et une version sombre (`DarkColors`) sont
+  définies à la main. Les couleurs dynamiques sont désactivées pour garder la même identité
+  visuelle sur tous les téléphones.
+- **`MaterialTheme.typography`** : titres en gras et tailles ajustées pour une bonne lisibilité.
+- **`MaterialTheme.shapes`** : coins arrondis (8 / 12 / 20 / 28 dp) utilisés par les cartes, les
+  chips et l'en-tête, pour un rendu homogène.
+- Le thème suit le réglage du système (`isSystemInDarkTheme()`).
+- Les couleurs sont toujours lues via `MaterialTheme.colorScheme` (jamais de couleur écrite
+  directement dans les composables), ce qui permet au clair et au sombre de fonctionner sans
+  code supplémentaire.
 
-Le padding externe est appliqué par le parent pour placer un composant :
-- dans `EcranProfil`, `modifier.padding(16.dp)` est passé à `FicheProfil` pour décaler la fiche par rapport
-  aux bords de l'écran ;
-- dans `MainActivity`, `innerPadding` du `Scaffold` est passé à `EcranProfil` ;
-- dans `FicheProfil`, des `Modifier.padding(top = ...)` sont passés à `ZoneDisponibilite`,
-  `InfoSecondaire` et `BoutonAction` pour les espacer les uns des autres.
+## Previews
 
-### 4. Où utilisez-vous un padding interne ?
+2 previews sont fournies dans `MainActivity.kt` :
+profil en thème clair, profil en thème sombre.
 
-Le padding interne est appliqué dans un composant pour espacer son contenu :
-- dans `FicheProfil`, `Column(modifier = Modifier.padding(16.dp))` espace le contenu par rapport
-  au bord de la `Surface` ;
-- dans `ZoneDisponibilite`, `Modifier.padding(12.dp)` sur le `Text` espace le texte du bord de la zone cliquable.
+## Captures d'écran
 
-### 5. Quel composant reçoit un callback ?
+![Rendu clair](/preview1.png)
+![Rendu sombre](/preview2.png)
 
-`FicheProfil` reçoit deux callbacks, `onContacterClick` et `onDisponibiliteClick`, qu'elle transmet
-à `BoutonAction` et `ZoneDisponibilite` (paramètre `onClick: () -> Unit`). Au clic, ces composants
-se contentent de signaler l'événement : les callbacks sont vides, aucune logique applicative
-n'est décidée dans les composants.
+## Quelles notions du chapitre Compose UI avez-vous réutilisées ?
 
-### 6. Quelle information d'accessibilité avez-vous ajoutée ?
-
-Sur la zone cliquable personnalisée `ZoneDisponibilite`, j'ai ajouté dans `semantics` un
-`role = Role.Button` et un `contentDescription` clair (« … Appuyer pour voir les détails »).
-Un lecteur d'écran comprend ainsi que la zone est un bouton et ce qu'elle fait.
-Pour `BoutonAction`, le composant `Button` est déjà plus explicite qu'une zone cliquable
-personnalisée : il porte nativement le rôle de bouton et son texte est lu par le lecteur d'écran.
-
-### 7. Pourquoi vos composants peuvent-ils être considérés comme réutilisables ?
-
-Ils ne sont pas figés : ils reçoivent leurs données en paramètres (nom, rôle, compétence, texte du bouton,
-callbacks) et acceptent un paramètre `modifier: Modifier = Modifier` qui est utilisé dans le composable,
-ce qui laisse le parent décider du placement externe. Les deux previews le montrent :
-la même `FicheProfil` affiche deux profils différents (textes, compétences, disponibilité et bouton différents).
-
-## Capture d'écran
-
-![Preview du profil](/preview1.png)
-![Preview du profil](/preview2.png)
-
-## Lien du dépôt
-
-https://github.com/Maxime-SALINS/DevProfil
+J'ai réutilisé les composants fondamentaux (`Text`, `Button`, `Icon`, `Image`, `Card`,
+`OutlinedTextField` en lecture seule), les layouts (`Column`, `Row`, `Box`, `Spacer`, `Surface`)
+et les listes modernes (`LazyColumn` pour les projets, `LazyRow` pour les compétences) avec des
+composables réutilisables (`ProjectCard`, `TechnologyChip`). J'ai aussi appliqué Material Design 3
+(`colorScheme`, `typography`, `shapes`) avec un thème clair et un thème sombre, ainsi que les
+callbacks et les previews vus dans le premier devoir.

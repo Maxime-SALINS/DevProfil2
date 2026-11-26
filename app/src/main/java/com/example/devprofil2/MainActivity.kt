@@ -4,22 +4,45 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Email
+import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.semantics.Role
-import androidx.compose.ui.semantics.contentDescription
-import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.devprofil2.ui.theme.DevProfil2Theme
@@ -31,161 +54,359 @@ class MainActivity : ComponentActivity() {
         setContent {
             DevProfil2Theme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    EcranProfil(modifier = Modifier.padding(innerPadding))
+                    ProfilScreen(
+                        profil = sampleProfil(),
+                        onContactClick = {},
+                        modifier = Modifier.padding(innerPadding)
+                    )
                 }
             }
         }
     }
 }
 
+// ---------------------------------------------------------------------------
+// Écran principal : Column qui tient dans l'écran, sans scroll global.
+// Les projets sont dans une LazyColumn qui prend la place restante (weight).
+// ---------------------------------------------------------------------------
 @Composable
-fun EcranProfil(modifier: Modifier = Modifier) {
-    FicheProfil(
-        nom = "Maxime Salins",
-        role = "Étudiant développeur",
-        description = "Étudiant en informatique, à l'aise en PHP, " +
-                "qui découvre le développement Android avec Jetpack Compose.",
-        competences = listOf("PHP", "Kotlin", "Jetpack Compose", "Git"),
-        disponibilite = "Disponible pour un stage",
-        contact = "maxime.salins@gmail.com",
-        texteBouton = "Contacter",
-        onActionClick = { /* Le composant signale le clic, aucune logique ici */ },
-        onDisponibiliteClick = { /* Idem : simple callback */ },
-        // Padding EXTERNE : le parent décide de la place de la fiche dans l'écran
-        modifier = modifier.padding(16.dp)
-    )
+fun ProfilScreen(
+    profil: ProfilUi,
+    onContactClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier
+            .fillMaxSize()
+            .background(MaterialTheme.colorScheme.background)
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        ProfilHeader(
+            nom = profil.nom,
+            role = profil.role,
+            disponible = profil.disponible
+        )
+        DescriptionCard(description = profil.description)
+        SectionTitle(titre = "Compétences")
+        CompetencesRow(competences = profil.competences)
+        SectionTitle(titre = "Projets")
+        LazyColumn(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            items(
+                items = profil.projets,
+                key = { projet -> projet.id }
+            ) { projet ->
+                ProjectCard(projet = projet)
+            }
+        }
+        ContactZone(
+            email = profil.email,
+            localisation = profil.localisation,
+            disponibilite = profil.disponibilite
+        )
+        Button(
+            onClick = onContactClick,
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Text(text = profil.texteBouton)
+        }
+    }
 }
+
+// ---------------------------------------------------------------------------
+// En-tête : Surface + Row + Box (avatar + badge)
+// ---------------------------------------------------------------------------
 @Composable
-fun FicheProfil(
+fun ProfilHeader(
     nom: String,
     role: String,
-    description: String,
-    competences: List<String>,
-    disponibilite: String,
-    contact: String,
-    texteBouton: String,
-    onActionClick: () -> Unit,
-    onDisponibiliteClick: () -> Unit,
+    disponible: Boolean,
     modifier: Modifier = Modifier
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surfaceVariant
+        shape = MaterialTheme.shapes.large,
+        color = MaterialTheme.colorScheme.primaryContainer,
+        contentColor = MaterialTheme.colorScheme.onPrimaryContainer
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            EnteteProfil(nom = nom, role = role)
-
-            Text(
-                text = description,
-                modifier = Modifier.padding(top = 12.dp)
+        Row(
+            modifier = Modifier.padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            AvatarAvecBadge(
+                nom = nom,
+                disponible = disponible
             )
-
-            Text(
-                text = "Compétences",
-                style = MaterialTheme.typography.titleMedium,
-                modifier = Modifier.padding(top = 16.dp, bottom = 4.dp)
-            )
-            for (competence in competences) {
-                CompetenceItem(competence = competence)
+            Spacer(modifier = Modifier.width(16.dp))
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = nom,
+                    style = MaterialTheme.typography.headlineMedium
+                )
+                Text(
+                    text = role,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = MaterialTheme.colorScheme.primary
+                )
             }
-
-            ZoneDisponibilite(
-                texte = disponibilite,
-                onClick = onDisponibiliteClick,
-                modifier = Modifier.padding(top = 16.dp)
-            )
-
-            InfoSecondaire(
-                texte = "Contact : $contact",
-                modifier = Modifier.padding(top = 8.dp)
-            )
-
-            BoutonAction(
-                texte = texteBouton,
-                onClick = onActionClick,
-                modifier = Modifier.padding(top = 16.dp)
-            )
         }
     }
 }
 
 @Composable
-fun EnteteProfil(nom: String, role: String, modifier: Modifier = Modifier) {
-    Column(modifier = modifier) {
-        Text(
-            text = nom,
-            style = MaterialTheme.typography.headlineMedium
+fun AvatarAvecBadge(
+    nom: String,
+    disponible: Boolean,
+    modifier: Modifier = Modifier
+) {
+    Box(modifier = modifier.size(88.dp)) {
+        Image(
+            painter = painterResource(id = android.R.drawable.ic_menu_gallery),
+            contentDescription = "Avatar de $nom",
+            contentScale = ContentScale.Crop,
+            modifier = Modifier
+                .size(80.dp)
+                .clip(CircleShape)
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .align(Alignment.TopStart)
         )
+        if (disponible) {
+            Surface(
+                modifier = Modifier.align(Alignment.BottomEnd),
+                shape = CircleShape,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                Icon(
+                    imageVector = Icons.Default.CheckCircle,
+                    contentDescription = "Disponible",
+                    tint = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier
+                        .padding(2.dp)
+                        .size(24.dp)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun DescriptionCard(
+    description: String,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surfaceVariant,
+            contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    ) {
         Text(
-            text = role,
-            style = MaterialTheme.typography.titleMedium,
-            color = MaterialTheme.colorScheme.primary
+            text = description,
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier.padding(12.dp)
         )
     }
 }
 
 @Composable
-fun CompetenceItem(competence: String, modifier: Modifier = Modifier) {
+fun SectionTitle(
+    titre: String,
+    modifier: Modifier = Modifier
+) {
     Text(
-        text = "• $competence",
-        modifier = modifier.padding(vertical = 2.dp)
-    )
-}
-
-@Composable
-fun InfoSecondaire(texte: String, modifier: Modifier = Modifier) {
-    Text(
-        text = texte,
-        style = MaterialTheme.typography.bodySmall,
+        text = titre,
+        style = MaterialTheme.typography.titleLarge,
+        color = MaterialTheme.colorScheme.primary,
         modifier = modifier
     )
 }
 
+// ---------------------------------------------------------------------------
+// Liste horizontale (LazyRow) de compétences
+// ---------------------------------------------------------------------------
 @Composable
-fun ZoneDisponibilite(
-    texte: String,
-    onClick: () -> Unit,
+fun CompetencesRow(
+    competences: List<String>,
+    modifier: Modifier = Modifier
+) {
+    LazyRow(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        items(competences) { competence ->
+            TechnologyChip(label = competence)
+        }
+    }
+}
+
+@Composable
+fun TechnologyChip(
+    label: String,
     modifier: Modifier = Modifier
 ) {
     Surface(
-        // Chaîne de modifiers : largeur -> clic -> sémantique
-        modifier = modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .semantics {
-                role = Role.Button
-                contentDescription = "$texte. Appuyer pour voir les détails"
-            },
-        color = MaterialTheme.colorScheme.secondaryContainer
+        modifier = modifier,
+        shape = MaterialTheme.shapes.extraLarge,
+        color = MaterialTheme.colorScheme.secondaryContainer,
+        contentColor = MaterialTheme.colorScheme.onSecondaryContainer
     ) {
         Text(
+            text = label,
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
+            style = MaterialTheme.typography.labelLarge
+        )
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Carte de projet (élément de la LazyColumn)
+// ---------------------------------------------------------------------------
+@Composable
+fun ProjectCard(
+    projet: ProjetUi,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large,
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            Text(
+                text = projet.titre,
+                style = MaterialTheme.typography.titleMedium,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = projet.description,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Spacer(modifier = Modifier.height(4.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = Icons.Default.Star,
+                    contentDescription = "Technologies",
+                    tint = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier.size(16.dp)
+                )
+                Text(
+                    text = projet.technologies,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.secondary,
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(start = 8.dp)
+                )
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Zone de contact : champs en lecture seule
+// ---------------------------------------------------------------------------
+@Composable
+fun ContactZone(
+    email: String,
+    localisation: String,
+    disponibilite: String,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        shape = MaterialTheme.shapes.large
+    ) {
+        Column(modifier = Modifier.padding(12.dp)) {
+            ContactField(
+                label = "E-mail",
+                value = email,
+                icon = Icons.Default.Email
+            )
+            Spacer(modifier = Modifier.height(8.dp))
+            Row(modifier = Modifier.fillMaxWidth()) {
+                ContactInfo(
+                    icon = Icons.Default.LocationOn,
+                    texte = localisation,
+                    modifier = Modifier.weight(1f)
+                )
+                ContactInfo(
+                    icon = Icons.Default.CheckCircle,
+                    texte = disponibilite,
+                    modifier = Modifier.weight(2f)
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun ContactInfo(
+    icon: ImageVector,
+    texte: String,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.secondary,
+            modifier = Modifier.size(18.dp)
+        )
+        Text(
             text = texte,
-            style = MaterialTheme.typography.titleSmall,
-            modifier = Modifier.padding(12.dp) // padding interne de la zone
+            style = MaterialTheme.typography.bodyMedium,
+            modifier = Modifier
+                .weight(1f)
+                .padding(start = 6.dp)
         )
     }
 }
 
 @Composable
-fun BoutonAction(
-    texte: String,
-    onClick: () -> Unit,
+fun ContactField(
+    label: String,
+    value: String,
+    icon: ImageVector,
     modifier: Modifier = Modifier
 ) {
-    Button(
-        onClick = onClick,
+    OutlinedTextField(
+        value = value,
+        onValueChange = {},
+        readOnly = true,
+        singleLine = true,
+        label = { Text(text = label) },
+        leadingIcon = {
+            Icon(
+                imageVector = icon,
+                contentDescription = label
+            )
+        },
         modifier = modifier.fillMaxWidth()
-    ) {
-        Text(text = texte)
-    }
+    )
 }
 
-// Données Local
+// ---------------------------------------------------------------------------
+// Données locales
+// ---------------------------------------------------------------------------
 data class ProjetUi(
     val id: Int,
     val titre: String,
     val description: String,
-    val technologies: List<String>
+    val technologies: String
 )
 
 data class ProfilUi(
@@ -213,19 +434,25 @@ fun sampleProfil(): ProfilUi {
                 id = 1,
                 titre = "DevProfil",
                 description = "Première fiche de profil développeur avec composables réutilisables.",
-                technologies = listOf("Kotlin", "Jetpack Compose")
+                technologies = "Kotlin · Jetpack Compose"
             ),
             ProjetUi(
                 id = 2,
                 titre = "Boutique de chocolat",
                 description = "Site de boutique en PHP natif, conteneurisé avec Docker.",
-                technologies = listOf("PHP", "Docker", "GitLab")
+                technologies = "PHP · Docker · GitLab"
             ),
             ProjetUi(
                 id = 3,
-                titre = "ORM pédagogique",
-                description = "Petit ORM écrit en PHP pour comprendre le mapping objet-relationnel.",
-                technologies = listOf("PHP", "SQL")
+                titre = "Classification WDBC",
+                description = "Prédiction du cancer du sein avec un réseau de neurones en NumPy.",
+                technologies = "Python · NumPy · Colab"
+            ),
+            ProjetUi(
+                id = 4,
+                titre = "Menu latéral Symfony",
+                description = "Menu de navigation dynamique piloté par les routes Symfony.",
+                technologies = "Symfony · Twig · Stimulus"
             )
         ),
         email = "maxime.salins@gmail.com",
@@ -236,41 +463,27 @@ fun sampleProfil(): ProfilUi {
     )
 }
 
-// Previews : deux profils différents
-@Preview(showBackground = true, name = "Android junior - disponible")
+// ---------------------------------------------------------------------------
+// Previews
+// ---------------------------------------------------------------------------
+@Preview(showBackground = true, device = "spec:width=411dp,height=891dp", name = "Profil Android - clair")
 @Composable
-fun ProfilAndroidJuniorPreview() {
-    DevProfil2Theme {
-        FicheProfil(
-            nom = "Maxime Salins",
-            role = "Développeur Android junior",
-            description = "Étudiant motivé, je découvre Jetpack Compose.",
-            competences = listOf("Kotlin", "Jetpack Compose", "Git"),
-            disponibilite = "Disponible pour un stage",
-            contact = "maxime.salins@gmail.com",
-            texteBouton = "Contacter",
-            onActionClick = {},
-            onDisponibiliteClick = {},
-            modifier = Modifier.padding(16.dp)
+fun ProfilScreenPreview() {
+    DevProfil2Theme(darkTheme = false) {
+        ProfilScreen(
+            profil = sampleProfil(),
+            onContactClick = {}
         )
     }
 }
 
-@Preview(showBackground = true, name = "Full-stack - non disponible")
+@Preview(showBackground = true, device = "spec:width=411dp,height=891dp", name = "Profil Android - sombre")
 @Composable
-fun ProfilFullStackPreview() {
-    DevProfil2Theme {
-        FicheProfil(
-            nom = "Camille Martin",
-            role = "Développeuse full-stack",
-            description = "Cinq ans d'expérience sur des applications web et mobiles.",
-            competences = listOf("PHP", "JavaScript", "SQL", "Docker", "API REST"),
-            disponibilite = "Indisponible jusqu'en janvier",
-            contact = "camille.martin@gmail.com",
-            texteBouton = "Voir le portfolio",
-            onActionClick = {},
-            onDisponibiliteClick = {},
-            modifier = Modifier.padding(16.dp)
+fun ProfilScreenDarkPreview() {
+    DevProfil2Theme(darkTheme = true) {
+        ProfilScreen(
+            profil = sampleProfil(),
+            onContactClick = {}
         )
     }
 }
